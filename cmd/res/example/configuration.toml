@@ -80,3 +80,12 @@ File = ''
        StopBits = '1'
        Parity = 'N'
        UnitID = '1'
+
+[[DeviceList]]
+  Name = 'Modbus DTU test device'
+  Profile = 'Test.Device.Modbus.Profile'
+  Description = 'This device is a product for monitoring and controlling digital inputs and outputs over DTU.'
+  labels = [ 'Air conditioner','modbus DTU' ]
+  [DeviceList.Protocols]
+    [DeviceList.Protocols.modbus-dtu]
+        UnitID = '5'

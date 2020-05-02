@@ -9,6 +9,7 @@ package driver
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -30,9 +31,48 @@ type Driver struct {
 }
 
 var concurrentCommandLimit = 100
+var clientMap map[string]interface{}
 
 func (d *Driver) DisconnectDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
 	d.Logger.Warn("Driver's DisconnectDevice function didn't implement")
+	return nil
+}
+
+
+func runDtuServer(port int) error {
+	clientMap = make(map[string]interface{})
+	tcpS := NewServer("localhost:"+strconv.Itoa(port))
+
+	tcpS.OnNewClient(func(c *Client) {
+		fmt.Println("new client connected")
+		c.connectedAt = time.Now()
+		c.Send("Welcome!")
+	})
+	tcpS.OnNewMessage(func(c *Client, message string) {
+		if(len(message)<5){
+			fmt.Println("DTU心跳包")
+			c.Send("AAAAA")
+			return
+		}
+		if(!c.status) {
+			// 检查注册包是否符合登录校验
+			c.status = true
+			c.dtuId = "ssssss"
+			clientMap[c.dtuId] = c
+			fmt.Println("DTU成功登录")
+		}else{
+			fmt.Println("服务端收到数据 : ",message)
+		}
+		// new message received
+	})
+	tcpS.OnClientConnectionClosed(func(c *Client, err error) {
+		// connection with client lost
+		fmt.Println("DTU断开连接")
+		delete(clientMap,c.dtuId)
+		c=nil
+	})
+
+	tcpS.Listen()
 	return nil
 }
 
@@ -228,6 +268,7 @@ func (d *Driver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkModel.As
 	d.AsyncCh = asyncCh
 	d.addressMap = make(map[string]chan bool)
 	d.workingAddressCount = make(map[string]int)
+	runDtuServer(9000)
 	return nil
 }
 

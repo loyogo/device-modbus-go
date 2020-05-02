@@ -9,6 +9,7 @@ package driver
 const (
 	ProtocolTCP = "modbus-tcp"
 	ProtocolRTU = "modbus-rtu"
+	ProtocolDTU = "modbus-dtu"
 
 	Address  = "Address"
 	Port     = "Port"

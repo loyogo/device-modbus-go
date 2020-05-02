@@ -28,11 +28,12 @@ type ConnectionInfo struct {
 func createConnectionInfo(protocols map[string]models.ProtocolProperties) (info *ConnectionInfo, err error) {
 	protocolRTU, rtuExist := protocols[ProtocolRTU]
 	protocolTCP, tcpExist := protocols[ProtocolTCP]
+	protocolTCP, dtuExist := protocols[ProtocolDTU]
 
-	if rtuExist && tcpExist {
-		return info, fmt.Errorf("unsupported multiple protocols, please choose %s or %s, not both", ProtocolRTU, ProtocolTCP)
-	} else if !rtuExist && !tcpExist {
-		return info, fmt.Errorf("unable to create connection info, protocol config '%s' or %s not exist", ProtocolRTU, ProtocolTCP)
+	if rtuExist && tcpExist && dtuExist{
+		return info, fmt.Errorf("unsupported multiple protocols, please choose %s or %s or %s, not both", ProtocolRTU, ProtocolTCP, ProtocolDTU)
+	} else if !rtuExist && !tcpExist && !dtuExist {
+		return info, fmt.Errorf("unable to create connection info, protocol config '%s' or %s or %s not exist", ProtocolRTU, ProtocolTCP, ProtocolDTU)
 	}
 
 	if rtuExist {
@@ -42,6 +43,11 @@ func createConnectionInfo(protocols map[string]models.ProtocolProperties) (info 
 		}
 	} else if tcpExist {
 		info, err = createTcpConnectionInfo(protocolTCP)
+		if err != nil {
+			return nil, err
+		}
+	} else if dtuExist {
+		info, err = createDTUConnectionInfo(protocolTCP)
 		if err != nil {
 			return nil, err
 		}
@@ -141,6 +147,24 @@ func createTcpConnectionInfo(tcpProtocol map[string]string) (info *ConnectionInf
 		Protocol: ProtocolTCP,
 		Address:  address,
 		Port:     int(port),
+		UnitID:   byte(unitID),
+	}, nil
+}
+
+func createDTUConnectionInfo(dtuProtocol map[string]string) (info *ConnectionInfo, err error) {
+	errorMessage := "unable to create DTU connection info, protocol config '%s' not exist"
+
+	unitIDString, ok := dtuProtocol[UnitID]
+	if !ok {
+		return nil, fmt.Errorf(errorMessage, UnitID)
+	}
+	unitID, err := strconv.ParseUint(unitIDString, 0, 8)
+	if err != nil {
+		return nil, fmt.Errorf("uintID value out of range(0–255). Error: %v", err)
+	}
+
+	return &ConnectionInfo{
+		Protocol: ProtocolDTU,
 		UnitID:   byte(unitID),
 	}, nil
 }
